@@ -1,0 +1,12 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  /* the calm cool background shows through on wide screens, framing the
+     460px app column like a phone on a desk */
+  background: #E9EBF2;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
