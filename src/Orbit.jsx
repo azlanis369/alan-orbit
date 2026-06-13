@@ -3,7 +3,10 @@ import {
   Home, Users, Target, User, LifeBuoy, X, Heart, Sparkles, Shield,
   Flag, MessageCircle, Plus, CheckCircle2, Wind, Phone, Send,
   ChevronRight, Award, Lock, Download, Trash2, EyeOff, Eye, RotateCcw,
+  MapPin, Globe,
 } from "lucide-react";
+import { resolveCrisisLines } from "./lib/crisis.js";
+import { SUPPORTED_REGIONS } from "./data/crisisLines.js";
 /* ------------------------------------------------------------------ */
 /*  ORBIT — recovery community, rebuilt                                */
 /*  Design tokens (see <style> below):                                 */
@@ -125,9 +128,45 @@ function OrbitRing({ days }) {
   );
 }
 /* ----------------------------- Help overlay ------------------------ */
-function HelpSheet({ open, onClose }) {
+const isUrl = (s) => /[a-z]\.[a-z]/i.test(s) && !/^\+?[\d\s().-]+$/.test(s);
+const telHref = (s) => "tel:" + s.replace(/[^\d+]/g, "");
+
+function HelpLine({ line }) {
+  const url = isUrl(line.phone);
+  const href = url ? `https://${line.phone.replace(/^https?:\/\//, "")}` : telHref(line.phone);
+  return (
+    <a className="help-line" href={href} target={url ? "_blank" : undefined} rel={url ? "noreferrer" : undefined}>
+      {url ? <Globe size={18} /> : <Phone size={18} />}
+      <div>
+        <strong>{line.name}</strong>
+        <span>{line.phone}{line.note ? ` · ${line.note}` : ""}</span>
+      </div>
+      <ChevronRight size={18} />
+    </a>
+  );
+}
+
+function HelpSheet({ open, onClose, accountCountry }) {
   const [breath, setBreath] = useState(false);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    setLoading(true);
+    resolveCrisisLines({ accountCountry })
+      .then((d) => { if (alive) setData(d); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [open, accountCountry]);
+
   if (!open) return null;
+  const sourceLabel = data && (
+    data.source === "account" ? "based on your registered region"
+      : data.source === "ip" ? "based on your location"
+      : "international directory"
+  );
   return (
     <div className="sheet-scrim" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog"
@@ -136,17 +175,17 @@ function HelpSheet({ open, onClose }) {
           <div className="sheet-title"><LifeBuoy size={20} /> You're not alone right now</div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
-        <p className="sheet-sub">If you're in danger or thinking about harming yourself, please reach out. These lines are free, confidential, and open 24/7.</p>
-        <a className="help-line" href="tel:988">
-          <Phone size={18} />
-          <div><strong>988 Suicide &amp; Crisis Lifeline</strong><span>Call or text 988 (US)</span></div>
-          <ChevronRight size={18} />
-        </a>
-        <a className="help-line" href="tel:18006624357">
-          <Phone size={18} />
-          <div><strong>SAMHSA National Helpline</strong><span>1-800-662-4357 · treatment referrals (US)</span></div>
-          <ChevronRight size={18} />
-        </a>
+        <p className="sheet-sub">If you're in danger or thinking about harming yourself, please reach out. These lines are free or low-cost, confidential, and here for you.</p>
+        {data && (
+          <div className="help-region">
+            <MapPin size={13} /> {data.country} <span>· {sourceLabel}</span>
+          </div>
+        )}
+        {loading && !data ? (
+          <div className="help-region"><Globe size={13} /> Finding the closest lines to you…</div>
+        ) : (
+          (data?.lines || []).map((line) => <HelpLine key={line.name} line={line} />)
+        )}
         <button className="breathe-btn" onClick={() => setBreath((b) => !b)}>
           <Wind size={18} /> {breath ? "Stop" : "Try a 60-second breath"}
         </button>
@@ -157,8 +196,8 @@ function HelpSheet({ open, onClose }) {
           </div>
         )}
         <p className="help-note">
-          These are U.S. examples for the prototype. Before launch, swap in verified,
-          localized crisis &amp; recovery lines for every country and language you support.
+          Lines are matched to where you are. Numbers are gathered for the prototype —
+          before launch, have each verified locally and refreshed on a schedule.
         </p>
       </div>
     </div>
@@ -218,6 +257,9 @@ export default function Orbit() {
   const [draftCircle, setDraftCircle] = useState(CIRCLES[0].name);
   const [joined, setJoined] = useState(saved?.joined ?? ["Just for today"]);
   const [inRoom, setInRoom] = useState(saved?.inRoom ?? []);
+  // Registered account region. "" = auto-detect from IP. Set at sign-up;
+  // editable in the profile. Drives which crisis lines the Help sheet shows.
+  const [region, setRegion] = useState(saved?.region ?? "");
   const [toast, setToast] = useState(null);
   const [celebrate, setCelebrate] = useState(null);
   const [resetOpen, setResetOpen] = useState(false);
@@ -226,11 +268,11 @@ export default function Orbit() {
   /* persist the bits that should survive a reload (nice for live demos) */
   useEffect(() => {
     const state = {
-      days, mood, posts, joined, inRoom,
+      days, mood, posts, joined, inRoom, region,
       checkInDate: checkedToday ? todayStamp() : saved?.checkInDate ?? null,
     };
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { /* ignore */ }
-  }, [days, mood, posts, joined, inRoom, checkedToday]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [days, mood, posts, joined, inRoom, region, checkedToday]); // eslint-disable-line react-hooks/exhaustive-deps
   const logCheckIn = () => {
     if (checkedToday) return;
     const newDays = days + 1;
@@ -387,6 +429,16 @@ export default function Orbit() {
               <p className="ms-count">{reachedCount} of {MILESTONES.length} reached</p>
             </section>
             <section className="card">
+              <div className="prompt-eyebrow"><MapPin size={14} /> Your region</div>
+              <p className="region-note">Sets the crisis &amp; recovery lines you'll see in Help. Auto-detected from your connection unless you choose.</p>
+              <select className="region-select" value={region} onChange={(e) => { setRegion(e.target.value); flash(e.target.value ? "Region saved — Help now shows local lines." : "Back to auto-detect."); }}>
+                <option value="">Auto-detect (use my location)</option>
+                {SUPPORTED_REGIONS.map((r) => (
+                  <option key={r.code} value={r.code}>{r.country}</option>
+                ))}
+              </select>
+            </section>
+            <section className="card">
               <div className="prompt-eyebrow"><Shield size={14} /> Your data, your call</div>
               <button className="data-row" onClick={() => flash("Export started — you'll get a link.")}>
                 <Download size={16} /> Export my data <ChevronRight size={16} />
@@ -419,7 +471,7 @@ export default function Orbit() {
           </button>
         ))}
       </nav>
-      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} accountCountry={region} />
       {celebrate && (
         <div className="sheet-scrim" onClick={() => setCelebrate(null)}>
           <div className="celebrate" onClick={(e) => e.stopPropagation()}>
@@ -560,6 +612,12 @@ const CSS = `
 .data-row svg:last-child{ margin-left:auto; color:#c2c7d6; }
 .data-row.danger{ color:#C05B4A; border-bottom:none; }
 .help-note{ font-size:12px; color:var(--muted); line-height:1.5; margin-top:10px; }
+.help-region{ display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600;
+  color:var(--horizon); margin:2px 0 12px; }
+.help-region span{ font-weight:400; color:var(--muted); }
+.region-note{ font-size:12.5px; color:var(--muted); line-height:1.5; margin-bottom:10px; }
+.region-select{ width:100%; border:1px solid var(--line); border-radius:12px; padding:11px;
+  font:inherit; font-size:14px; color:var(--ink); background:#fafbfe; cursor:pointer; }
 /* float help + nav */
 .float-help{ position:fixed; right:16px; bottom:92px; z-index:30; display:flex; align-items:center;
   gap:7px; background:var(--dawn); color:#241303; border:none; border-radius:30px;

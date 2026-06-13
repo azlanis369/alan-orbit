@@ -10,6 +10,25 @@ bigger app later. Session state (your day count, mood, posts, joined circles)
 persists in `localStorage`, so the prototype "remembers" you across reloads —
 which makes live demos feel real.
 
+## Location-aware crisis help
+
+The Help sheet shows crisis & recovery lines matched to **where the user is**,
+resolved in this priority order:
+
+1. **Registered account region** — set at sign-up or in **Profile → Your
+   region**. This always wins, because where someone *lives* matters more than
+   where their IP happens to be (travel, VPNs).
+2. **IP geolocation** — when no region is set. On a serverless host
+   (`api/crisis-lines.js`) this is read from the edge's geo header
+   (`x-vercel-ip-country`, `cf-ipcountry`, …) with **no third-party lookup and
+   no IP stored**. On a static host the browser does a key-free country lookup.
+3. **International fallback** — `findahelpline.com`, which routes to verified
+   local services worldwide.
+
+The country → lines dataset lives in **one place** (`src/data/crisisLines.js`)
+and is imported by both the client and the serverless function, so they can
+never drift. Add a country by adding one entry there.
+
 ## Run it locally
 
 ```bash
@@ -47,16 +66,28 @@ Great for "open this link and play with it right now."
 The Vite `base` is switched to `/alan-orbit/` automatically in CI via the
 `GITHUB_PAGES` env var, so assets resolve correctly under the repo subpath.
 
-### 3. Vercel — best developer experience, custom domains
-1. Go to vercel.com → **Add New → Project → Import** `azlanis369/alan-orbit`.
-2. Vercel auto-detects Vite (build `npm run build`, output `dist`). Click Deploy.
-3. You get a `*.vercel.app` URL and automatic preview deploys for every branch
-   and PR — this is the closest match to the "see the whole idea on a link"
-   workflow.
+### 3. Vercel — recommended (real server-side IP geolocation)
+This is the one to use now that Help is location-aware: Vercel runs
+`api/crisis-lines.js` and gives it the visitor's country from the edge, so the
+right lines appear automatically — no third-party call, no IP stored.
 
-### 4. Netlify — equally simple
+1. Go to vercel.com → **Add New → Project → Import** `azlanis369/alan-orbit`.
+2. Vercel auto-detects Vite (build `npm run build`, output `dist`) and serves
+   `/api/*` as serverless functions (`vercel.json` is included). Click Deploy.
+3. You get a `*.vercel.app` URL plus automatic preview deploys for every branch
+   and PR — the closest match to the "see the whole idea on a link" workflow.
+
+Sanity-check the function after deploy:
+`https://<your-app>.vercel.app/api/crisis-lines?country=MY` → Malaysian lines.
+
+### 4. Netlify — equally simple (also server-side geo)
 `netlify.toml` is included. Import the repo at app.netlify.com, or run
-`npx netlify deploy --prod`.
+`npx netlify deploy --prod`. The same `/api/crisis-lines` function runs here.
+
+> **GitHub Pages note:** Pages is static, so `api/crisis-lines.js` doesn't run
+> there. The app still works — it falls back to a browser-side country lookup —
+> but for true server-side geo with zero third-party calls, deploy to Vercel or
+> Netlify.
 
 ## Before this becomes a real product
 - The crisis lines in the Help sheet are **US placeholders**. Swap in verified,

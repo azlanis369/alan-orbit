@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "functions": {
+    "api/crisis-lines.js": {
+      "memory": 128,
+      "maxDuration": 5
+    }
+  }
+}
