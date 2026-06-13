@@ -66,19 +66,33 @@ Great for "open this link and play with it right now."
 The Vite `base` is switched to `/alan-orbit/` automatically in CI via the
 `GITHUB_PAGES` env var, so assets resolve correctly under the repo subpath.
 
-### 3. Vercel — recommended (real server-side IP geolocation)
+### 3. Vercel — recommended (real server-side IP geolocation) ⭐
 This is the one to use now that Help is location-aware: Vercel runs
 `api/crisis-lines.js` and gives it the visitor's country from the edge, so the
 right lines appear automatically — no third-party call, no IP stored.
 
+**Fastest — dashboard import (~2 min, no secrets):**
 1. Go to vercel.com → **Add New → Project → Import** `azlanis369/alan-orbit`.
 2. Vercel auto-detects Vite (build `npm run build`, output `dist`) and serves
-   `/api/*` as serverless functions (`vercel.json` is included). Click Deploy.
+   `/api/*` as serverless functions (`vercel.json` is included). Pick the
+   `claude/prototype-projection-deployment-zx0gx0` branch (or merge to `main`
+   first) and click **Deploy**.
 3. You get a `*.vercel.app` URL plus automatic preview deploys for every branch
    and PR — the closest match to the "see the whole idea on a link" workflow.
 
 Sanity-check the function after deploy:
 `https://<your-app>.vercel.app/api/crisis-lines?country=MY` → Malaysian lines.
+
+**Automated — deploy from GitHub Actions (optional):**
+`.github/workflows/vercel.yml` is included but stays **skipped** until you opt
+in, so it never conflicts with the dashboard integration. To enable:
+1. `npm i -g vercel && vercel link` in the repo → creates `.vercel/project.json`
+   with your `orgId` and `projectId`.
+2. In GitHub **Settings → Secrets and variables → Actions**, add secrets
+   `VERCEL_TOKEN` (from vercel.com/account/tokens), `VERCEL_ORG_ID`,
+   `VERCEL_PROJECT_ID`; then add the **variable** `DEPLOY_VERCEL=true`.
+3. Push — the workflow builds and deploys to production and prints the URL in
+   the run summary.
 
 ### 4. Netlify — equally simple (also server-side geo)
 `netlify.toml` is included. Import the repo at app.netlify.com, or run
