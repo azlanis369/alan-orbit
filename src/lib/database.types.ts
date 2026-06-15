@@ -52,6 +52,7 @@ export type AgentProfileRow = {
   telegram_username: string | null;
   qr_code_url: string | null;
   is_profile_public: boolean;
+  is_demo: boolean;
 } & Timestamps;
 
 export type ListingRow = {
@@ -151,6 +152,7 @@ export type ListingMediaRow = {
   caption: string | null;
   sort_order: number;
   file_size: number | null;
+  is_demo: boolean;
   created_at: string;
 };
 
@@ -162,6 +164,7 @@ export type ShareRow = {
   shared_at: string;
   visitor_token: string | null;
   metadata: Record<string, unknown> | null;
+  is_demo: boolean;
 };
 
 export type LeadRow = {
@@ -176,6 +179,7 @@ export type LeadRow = {
   preferred_area: string | null;
   notes: string | null;
   status: LeadStatus;
+  is_demo: boolean;
 } & Timestamps;
 
 export type DealRow = {
@@ -195,6 +199,7 @@ export type DealRow = {
   payment_status: string | null;
   deal_status: "booked" | "processing" | "closed" | "cancelled";
   remarks: string | null;
+  is_demo: boolean;
 } & Timestamps;
 
 export type ListingStatusHistoryRow = {
@@ -205,6 +210,7 @@ export type ListingStatusHistoryRow = {
   changed_by: string | null;
   changed_at: string;
   notes: string | null;
+  is_demo: boolean;
 };
 
 export type AuditLogRow = {

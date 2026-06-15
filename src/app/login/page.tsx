@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Logo } from "@/components/brand";
 import { DemoBadge } from "@/components/demo-badge";
 import { LoginForm } from "./login-form";
@@ -23,7 +24,9 @@ export default function LoginPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
-            <LoginForm />
+            <Suspense fallback={<div className="h-64" />}>
+              <LoginForm />
+            </Suspense>
           </div>
 
           {DEMO_MODE ? (
