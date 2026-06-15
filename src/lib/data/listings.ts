@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ListingRow } from "@/lib/database.types";
+import type {
+  ListingRow,
+  ListingMediaRow,
+  ListingProjectDetailRow,
+  ListingSubsaleDetailRow,
+  ListingRentalDetailRow,
+} from "@/lib/database.types";
 import type { ListingCategory, ListingStatus } from "@/lib/constants";
 
 export type ListingFilters = {
@@ -43,7 +49,7 @@ export async function getListings(
   // Tab filtering
   if (filters.tab && filters.tab !== "all") {
     if (["project", "subsale", "rental"].includes(filters.tab)) {
-      query = query.eq("category", filters.tab);
+      query = query.eq("category", filters.tab as ListingCategory);
     } else if (TAB_STATUS_MAP[filters.tab]) {
       query = query.in("status", TAB_STATUS_MAP[filters.tab]);
     }
@@ -97,7 +103,13 @@ export async function getPublicListingBySlug(slug: string) {
         .maybeSingle(),
     ]);
 
-  return { listing, media: media ?? [], project, subsale, rental };
+  return {
+    listing: listing as ListingRow,
+    media: (media ?? []) as ListingMediaRow[],
+    project: project as ListingProjectDetailRow | null,
+    subsale: subsale as ListingSubsaleDetailRow | null,
+    rental: rental as ListingRentalDetailRow | null,
+  };
 }
 
 /** Fetch listing + details for editing (owner/admin only via RLS). */
@@ -122,5 +134,11 @@ export async function getListingForEdit(id: string) {
       supabase.from("listing_rental_details").select("*").eq("listing_id", id).maybeSingle(),
     ]);
 
-  return { listing, media: media ?? [], project, subsale, rental };
+  return {
+    listing: listing as ListingRow,
+    media: (media ?? []) as ListingMediaRow[],
+    project: project as ListingProjectDetailRow | null,
+    subsale: subsale as ListingSubsaleDetailRow | null,
+    rental: rental as ListingRentalDetailRow | null,
+  };
 }

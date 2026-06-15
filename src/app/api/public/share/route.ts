@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   await supabase.from("shares").insert({
     listing_id: listing.id,
     agent_id: listing.agent_id,
-    channel,
+    channel: channel as ShareChannel,
   });
 
   await supabase

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
-import { listingSchema } from "@/lib/validations/listing";
+import { listingSchema, type ListingFormValues } from "@/lib/validations/listing";
 import { uniqueSlug } from "@/lib/utils";
 import type { ListingStatus } from "@/lib/constants";
 
@@ -19,10 +19,35 @@ type MediaInput = {
   file_size?: number | null;
 };
 
-function detailPayload(category: string, values: Record<string, unknown>) {
-  if (category === "project") return { table: "listing_project_details", data: values.project };
-  if (category === "subsale") return { table: "listing_subsale_details", data: values.subsale };
-  if (category === "rental") return { table: "listing_rental_details", data: values.rental };
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Insert (or upsert) the category-specific detail row using literal table names. */
+async function saveDetail(
+  supabase: SupabaseServerClient,
+  category: string,
+  listingId: string,
+  values: ListingFormValues,
+  upsert: boolean,
+) {
+  const onConflict = { onConflict: "listing_id" } as const;
+  if (category === "project" && values.project) {
+    const row = { listing_id: listingId, ...values.project };
+    return upsert
+      ? supabase.from("listing_project_details").upsert(row, onConflict)
+      : supabase.from("listing_project_details").insert(row);
+  }
+  if (category === "subsale" && values.subsale) {
+    const row = { listing_id: listingId, ...values.subsale };
+    return upsert
+      ? supabase.from("listing_subsale_details").upsert(row, onConflict)
+      : supabase.from("listing_subsale_details").insert(row);
+  }
+  if (category === "rental" && values.rental) {
+    const row = { listing_id: listingId, ...values.rental };
+    return upsert
+      ? supabase.from("listing_rental_details").upsert(row, onConflict)
+      : supabase.from("listing_rental_details").insert(row);
+  }
   return null;
 }
 
@@ -89,12 +114,7 @@ export async function createListing(
   }
 
   // Category detail row
-  const detail = detailPayload(v.category, v);
-  if (detail?.data) {
-    await supabase
-      .from(detail.table)
-      .insert({ listing_id: listing.id, ...(detail.data as object) });
-  }
+  await saveDetail(supabase, v.category, listing.id, v, false);
 
   // Media rows
   if (media.length) {
@@ -184,15 +204,7 @@ export async function updateListing(
     return { ok: false, error: "Gagal mengemas kini listing." };
   }
 
-  const detail = detailPayload(v.category, v);
-  if (detail?.data) {
-    await supabase
-      .from(detail.table)
-      .upsert(
-        { listing_id: id, ...(detail.data as object) },
-        { onConflict: "listing_id" },
-      );
-  }
+  await saveDetail(supabase, v.category, id, v, true);
 
   if (media) {
     await supabase.from("listing_media").delete().eq("listing_id", id);

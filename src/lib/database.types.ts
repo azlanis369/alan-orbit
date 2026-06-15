@@ -92,6 +92,8 @@ export type ListingRow = {
   views_count: number;
   shares_count: number;
   leads_count: number;
+  is_demo: boolean;
+  deleted_at: string | null;
   published_at: string | null;
 } & Timestamps;
 
@@ -219,6 +221,7 @@ type TableShape<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
   Update: Update;
+  Relationships: [];
 };
 
 export type Database = {
