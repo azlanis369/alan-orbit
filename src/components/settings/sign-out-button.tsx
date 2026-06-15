@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -13,8 +14,10 @@ export function SignOutButton() {
 
   async function onSignOut() {
     setLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (!LOCAL_DEMO) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     router.push("/login");
     router.refresh();
   }

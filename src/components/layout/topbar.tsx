@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 import { Logo } from "@/components/brand";
 import { DemoBadge } from "@/components/demo-badge";
 import {
@@ -29,8 +30,10 @@ export function Topbar({
     .toUpperCase();
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (!LOCAL_DEMO) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     router.push("/login");
     router.refresh();
   }

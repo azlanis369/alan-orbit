@@ -6,6 +6,67 @@ import { getSessionUser } from "@/lib/auth";
 import { listingSchema, type ListingFormValues } from "@/lib/validations/listing";
 import { uniqueSlug } from "@/lib/utils";
 import type { ListingStatus } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import {
+  demoAddListing,
+  demoUpdateListing,
+  demoSetStatus,
+  demoDeleteListing,
+} from "@/lib/demo-data/queries";
+import type { ListingRow } from "@/lib/database.types";
+
+/** Build a ListingRow from validated form values for the in-memory demo. */
+function demoListingRow(
+  v: ListingFormValues,
+  agentId: string,
+  slug: string,
+  hero: string | null,
+): Omit<ListingRow, "id"> {
+  const now = new Date().toISOString();
+  return {
+    agent_id: agentId,
+    category: v.category,
+    title: v.title,
+    slug,
+    property_type: v.property_type,
+    area: v.area,
+    address_private: v.address_private || null,
+    address_public: v.address_public || null,
+    show_exact_address: v.show_exact_address,
+    map_url: v.map_url || null,
+    price: v.price ?? null,
+    price_display: v.price_display || null,
+    tenure: v.tenure ?? null,
+    built_up_sqft: v.built_up_sqft ?? null,
+    land_area_sqft: v.land_area_sqft ?? null,
+    bedrooms: v.bedrooms ?? null,
+    bathrooms: v.bathrooms ?? null,
+    carparks: v.carparks ?? null,
+    furnishing: v.furnishing ?? null,
+    description: v.description || null,
+    top_selling_points: v.top_selling_points,
+    facilities: v.facilities,
+    amenities: v.amenities,
+    nearby: v.nearby,
+    tags: v.tags,
+    status: v.status,
+    visibility: v.visibility,
+    featured: v.featured,
+    show_agent_phone: v.show_agent_phone,
+    enable_whatsapp_cta: v.enable_whatsapp_cta,
+    enable_telegram_share: v.enable_telegram_share,
+    hero_image_url: hero,
+    internal_notes: v.internal_notes || null,
+    views_count: 0,
+    shares_count: 0,
+    leads_count: 0,
+    is_demo: true,
+    deleted_at: null,
+    created_at: now,
+    updated_at: now,
+    published_at: v.status !== "draft" ? now : null,
+  };
+}
 
 export type ListingActionResult =
   | { ok: true; id: string; slug: string }
@@ -64,9 +125,28 @@ export async function createListing(
     return { ok: false, error: parsed.error.errors[0]?.message ?? "Data tidak sah." };
   }
   const v = parsed.data;
-  const supabase = await createClient();
   const slug = uniqueSlug(v.title);
   const heroFromMedia = media.find((m) => m.media_type !== "video")?.url ?? null;
+
+  if (LOCAL_DEMO) {
+    const row = demoAddListing(
+      demoListingRow(v, user.id, slug, heroFromMedia),
+      media.map((m, i) => ({
+        media_type: m.media_type ?? "image",
+        url: m.url,
+        thumbnail_url: m.thumbnail_url ?? null,
+        caption: m.caption ?? null,
+        sort_order: i,
+        file_size: m.file_size ?? null,
+        is_demo: true,
+      })),
+    );
+    revalidatePath("/listings");
+    revalidatePath("/dashboard");
+    return { ok: true, id: row.id, slug: row.slug };
+  }
+
+  const supabase = await createClient();
 
   const { data: listing, error } = await supabase
     .from("listings")
@@ -157,9 +237,30 @@ export async function updateListing(
     return { ok: false, error: parsed.error.errors[0]?.message ?? "Data tidak sah." };
   }
   const v = parsed.data;
-  const supabase = await createClient();
-
   const heroFromMedia = media?.find((m) => m.media_type !== "video")?.url;
+
+  if (LOCAL_DEMO) {
+    demoUpdateListing(id, {
+      category: v.category,
+      title: v.title,
+      property_type: v.property_type,
+      area: v.area,
+      price: v.price ?? null,
+      price_display: v.price_display || null,
+      status: v.status,
+      visibility: v.visibility,
+      featured: v.featured,
+      description: v.description || null,
+      top_selling_points: v.top_selling_points,
+      ...(heroFromMedia ? { hero_image_url: heroFromMedia } : {}),
+    });
+    revalidatePath("/listings");
+    revalidatePath(`/listings/${id}`);
+    revalidatePath("/dashboard");
+    return { ok: true, id, slug: id };
+  }
+
+  const supabase = await createClient();
 
   const { data: listing, error } = await supabase
     .from("listings")
@@ -236,6 +337,15 @@ export async function updateListingStatus(
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "Tidak dibenarkan." };
+
+  if (LOCAL_DEMO) {
+    demoSetStatus(id, status);
+    revalidatePath("/listings");
+    revalidatePath(`/listings/${id}`);
+    revalidatePath("/dashboard");
+    return { ok: true };
+  }
+
   const supabase = await createClient();
 
   const { data: current } = await supabase
@@ -271,6 +381,13 @@ export async function deleteListing(
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "Tidak dibenarkan." };
+
+  if (LOCAL_DEMO) {
+    demoDeleteListing(id);
+    revalidatePath("/listings");
+    return { ok: true };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("listings")

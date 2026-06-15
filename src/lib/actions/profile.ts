@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { profileSchema } from "@/lib/validations/profile";
 import { slugify, uniqueSlug } from "@/lib/utils";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoAgents } from "@/lib/demo-data/dataset";
 
 export type ActionResult =
   | { ok: true; slug?: string }
@@ -23,6 +25,33 @@ export async function saveProfile(input: unknown): Promise<ActionResult> {
     };
   }
   const data = parsed.data;
+
+  if (LOCAL_DEMO) {
+    // Persist edits onto the in-memory agent profile (dev session only).
+    const idx = demoAgents.findIndex((a) => a.user_id === user.id);
+    if (idx >= 0) {
+      demoAgents[idx] = {
+        ...demoAgents[idx],
+        full_name: data.full_name,
+        display_name: data.display_name || null,
+        ren_number: data.ren_number || null,
+        agency_name: data.agency_name || null,
+        title: data.title || null,
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        email: data.email,
+        bio: data.bio || null,
+        service_areas: data.service_areas,
+        specialization: data.specialization,
+        is_profile_public: data.is_profile_public,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+    return { ok: true, slug: demoAgents[idx]?.slug };
+  }
+
   const supabase = await createClient();
 
   // Determine slug: keep existing, else derive a unique one from the name.

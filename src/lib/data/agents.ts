@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import type { AgentProfileRow, ListingRow } from "@/lib/database.types";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoGetPublicAgent, demoGetListingAgent } from "@/lib/demo-data/queries";
 
 /** Public agent profile by slug, plus their public listings. */
 export async function getPublicAgent(slug: string): Promise<{
   profile: AgentProfileRow;
   listings: ListingRow[];
 } | null> {
+  if (LOCAL_DEMO) return demoGetPublicAgent(slug);
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("agent_profiles")
@@ -37,6 +40,7 @@ export async function getPublicAgent(slug: string): Promise<{
 export async function getListingAgent(
   userId: string,
 ): Promise<AgentProfileRow | null> {
+  if (LOCAL_DEMO) return demoGetListingAgent(userId);
   const supabase = await createClient();
   const { data } = await supabase
     .from("agent_profiles")

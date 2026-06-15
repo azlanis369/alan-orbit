@@ -3,6 +3,7 @@
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { STORAGE_BUCKET, MEDIA_LIMITS } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 
 /** Compress an image client-side to keep uploads light (~2MB target). */
 export async function compressImage(file: File): Promise<File> {
@@ -30,6 +31,12 @@ export async function uploadToStorage(
   file: File,
   pathPrefix: string,
 ): Promise<UploadResult> {
+  if (LOCAL_DEMO) {
+    // No storage backend in the local demo — surface a clear message.
+    throw new Error(
+      "Muat naik dimatikan dalam Demo Mode tempatan. Sambungkan Supabase untuk simpan media.",
+    );
+  }
   const supabase = createClient();
   const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
   const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;

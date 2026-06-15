@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { DealRow } from "@/lib/database.types";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoGetDeals, demoListingTitleMap } from "@/lib/demo-data/queries";
 
 /**
  * List deals visible to the current user. RLS scopes owner/admin automatically.
@@ -9,6 +11,12 @@ export async function getDeals(): Promise<{
   deals: DealRow[];
   listingTitles: Map<string, string>;
 }> {
+  if (LOCAL_DEMO) {
+    return {
+      deals: demoGetDeals(),
+      listingTitles: new Map(Object.entries(demoListingTitleMap())),
+    };
+  }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("deals")

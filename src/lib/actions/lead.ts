@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { leadSchema } from "@/lib/validations/lead";
 import type { LeadStatus } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoAddLead, demoSetLeadStatus } from "@/lib/demo-data/queries";
 
 export type LeadActionResult = { ok: true; id: string } | { ok: false; error: string };
 
@@ -18,6 +20,25 @@ export async function createLead(input: unknown): Promise<LeadActionResult> {
     return { ok: false, error: parsed.error.errors[0]?.message ?? "Data tidak sah." };
   }
   const v = parsed.data;
+
+  if (LOCAL_DEMO) {
+    const lead = demoAddLead({
+      agent_id: user.id,
+      listing_id: v.listing_id || null,
+      name: v.name,
+      phone: v.phone,
+      email: v.email || null,
+      source: v.source,
+      budget: v.budget || null,
+      preferred_area: v.preferred_area || null,
+      notes: v.notes || null,
+      status: "new",
+      is_demo: true,
+    });
+    revalidatePath("/leads");
+    return { ok: true, id: lead.id };
+  }
+
   const supabase = await createClient();
 
   const { data: lead, error } = await supabase
@@ -52,6 +73,13 @@ export async function updateLeadStatus(
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await getSessionUser();
   if (!user) return { ok: false, error: "Tidak dibenarkan." };
+
+  if (LOCAL_DEMO) {
+    demoSetLeadStatus(id, status);
+    revalidatePath("/leads");
+    return { ok: true };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase

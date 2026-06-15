@@ -11,6 +11,8 @@ import { requireRole } from "@/lib/auth";
 import { ROLES, type Role, type UserStatus } from "@/lib/constants";
 import { getAdminOverview, getDashboardStats } from "@/lib/data/stats";
 import { createClient } from "@/lib/supabase/server";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoUsers, demoAgents } from "@/lib/demo-data/dataset";
 import { formatPrice } from "@/lib/utils";
 import type { AgentProfileRow, UserRow } from "@/lib/database.types";
 import type { BadgeProps } from "@/components/ui/badge";
@@ -50,17 +52,31 @@ const STATUS_LABELS: Record<UserStatus, string> = {
 export default async function AdminPage() {
   await requireRole([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
 
-  const supabase = await createClient();
-  const [overview, stats, { data: users }, { data: profiles }] =
-    await Promise.all([
+  let userRows: UserRow[];
+  let profileRows: AgentProfileRow[];
+  let overview: Awaited<ReturnType<typeof getAdminOverview>>;
+  let stats: Awaited<ReturnType<typeof getDashboardStats>>;
+
+  if (LOCAL_DEMO) {
+    [overview, stats] = await Promise.all([
+      getAdminOverview(),
+      getDashboardStats({}),
+    ]);
+    userRows = demoUsers as UserRow[];
+    profileRows = demoAgents as AgentProfileRow[];
+  } else {
+    const supabase = await createClient();
+    const [ov, st, usersRes, profilesRes] = await Promise.all([
       getAdminOverview(),
       getDashboardStats({}),
       supabase.from("users").select("*"),
       supabase.from("agent_profiles").select("*"),
     ]);
-
-  const userRows = (users ?? []) as UserRow[];
-  const profileRows = (profiles ?? []) as AgentProfileRow[];
+    overview = ov;
+    stats = st;
+    userRows = (usersRes.data ?? []) as UserRow[];
+    profileRows = (profilesRes.data ?? []) as AgentProfileRow[];
+  }
   const profileByUser = new Map(profileRows.map((p) => [p.user_id, p]));
 
   const totalLeads = stats.funnel.find((f) => f.stage === "Leads")?.count ?? 0;

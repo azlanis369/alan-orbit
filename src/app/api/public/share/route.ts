@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SHARE_CHANNELS, type ShareChannel } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 
 /** Record a share event and bump the listing's share counter. Public endpoint. */
 export async function POST(request: Request) {
+  if (LOCAL_DEMO) return NextResponse.json({ ok: true });
   let body: { listingId?: string; channel?: string };
   try {
     body = await request.json();

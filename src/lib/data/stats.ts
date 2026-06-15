@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { CLOSED_STATUSES, type ListingStatus } from "@/lib/constants";
+import { CLOSED_STATUSES, ROLES, type ListingStatus } from "@/lib/constants";
 import { daysSince } from "@/lib/utils";
 import type { ListingRow, DealRow, LeadRow } from "@/lib/database.types";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoScopedData } from "@/lib/demo-data/queries";
+import { demoUsers, demoAgents, demoDeals } from "@/lib/demo-data/dataset";
 
 const STALE_DAYS = 45;
 
@@ -33,6 +36,15 @@ export type DashboardStats = {
 type StatScope = { ownerId?: string };
 
 async function fetchScoped(scope: StatScope) {
+  if (LOCAL_DEMO) {
+    const d = demoScopedData(scope.ownerId);
+    return {
+      listings: d.listings,
+      leads: d.leads,
+      deals: d.deals,
+      shares: d.shares as { id: string; shared_at: string }[],
+    };
+  }
   const supabase = await createClient();
   const listingsQ = supabase.from("listings").select("*").is("deleted_at", null);
   const leadsQ = supabase.from("leads").select("*");
@@ -242,7 +254,6 @@ export type Swot = {
  * Heuristics over listings / leads / deals / shares / media completeness.
  */
 export async function getSwot(scope: StatScope = {}): Promise<Swot> {
-  const supabase = await createClient();
   const { listings, leads, deals, shares } = await fetchScoped(scope);
 
   const closed = deals.filter((d) => d.deal_status === "closed");
@@ -438,6 +449,27 @@ export type AdminOverview = {
 };
 
 export async function getAdminOverview(): Promise<AdminOverview> {
+  if (LOCAL_DEMO) {
+    const agentUsers = demoUsers.filter((u) => u.role === ROLES.AGENT);
+    const closedByAgent = new Map<string, { closed: number; commission: number }>();
+    for (const d of demoDeals) {
+      if (d.deal_status !== "closed") continue;
+      const cur = closedByAgent.get(d.agent_id) ?? { closed: 0, commission: 0 };
+      cur.closed += 1;
+      cur.commission += Number(d.commission_amount) || 0;
+      closedByAgent.set(d.agent_id, cur);
+    }
+    const nameOf = (id: string) =>
+      demoAgents.find((a) => a.user_id === id)?.display_name ?? "Agent";
+    return {
+      totalAgents: agentUsers.length,
+      activeAgents: agentUsers.length,
+      agentLeaderboard: [...closedByAgent.entries()]
+        .map(([id, v]) => ({ name: nameOf(id), ...v }))
+        .sort((a, b) => b.commission - a.commission)
+        .slice(0, 8),
+    };
+  }
   const supabase = await createClient();
   const [{ data: users }, { data: profiles }, { data: deals }] =
     await Promise.all([

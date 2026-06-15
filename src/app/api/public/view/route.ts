@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 
 /**
  * Increment a public listing's view counter. Uses the service-role client
  * because anonymous visitors have no RLS write access to listings.
  */
 export async function POST(request: Request) {
+  if (LOCAL_DEMO) return NextResponse.json({ ok: true });
   let listingId: unknown;
   try {
     ({ listingId } = await request.json());

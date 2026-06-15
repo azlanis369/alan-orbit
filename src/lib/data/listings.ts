@@ -7,6 +7,12 @@ import type {
   ListingRentalDetailRow,
 } from "@/lib/database.types";
 import type { ListingCategory, ListingStatus } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import {
+  demoGetListings,
+  demoGetListingBySlug,
+  demoGetListingById,
+} from "@/lib/demo-data/queries";
 
 export type ListingFilters = {
   category?: ListingCategory;
@@ -35,6 +41,7 @@ export async function getListings(
   filters: ListingFilters = {},
   opts: { ownerOnly?: boolean; ownerId?: string; limit?: number } = {},
 ): Promise<ListingRow[]> {
+  if (LOCAL_DEMO) return demoGetListings(filters, opts).slice(0, opts.limit ?? 60);
   const supabase = await createClient();
   let query = supabase
     .from("listings")
@@ -70,6 +77,7 @@ export async function getListings(
 
 /** Fetch a single listing by slug for public consumption (RLS-guarded). */
 export async function getPublicListingBySlug(slug: string) {
+  if (LOCAL_DEMO) return demoGetListingBySlug(slug);
   const supabase = await createClient();
   const { data: listing } = await supabase
     .from("listings")
@@ -114,6 +122,7 @@ export async function getPublicListingBySlug(slug: string) {
 
 /** Fetch listing + details for editing (owner/admin only via RLS). */
 export async function getListingForEdit(id: string) {
+  if (LOCAL_DEMO) return demoGetListingById(id);
   const supabase = await createClient();
   const { data: listing } = await supabase
     .from("listings")

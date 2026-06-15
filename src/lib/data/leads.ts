@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import type { LeadRow } from "@/lib/database.types";
 import type { LeadSource, LeadStatus } from "@/lib/constants";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
+import { demoGetLeads, demoListingTitleMap } from "@/lib/demo-data/queries";
+import { demoListings } from "@/lib/demo-data/dataset";
 
 export type LeadFilters = {
   status?: LeadStatus;
@@ -15,6 +18,10 @@ export async function getLeads(filters: LeadFilters = {}): Promise<{
   leads: LeadRow[];
   listingTitles: Map<string, string>;
 }> {
+  if (LOCAL_DEMO) {
+    const leads = demoGetLeads(filters);
+    return { leads, listingTitles: new Map(Object.entries(demoListingTitleMap())) };
+  }
   const supabase = await createClient();
   let query = supabase
     .from("leads")
@@ -48,6 +55,10 @@ export async function getLeads(filters: LeadFilters = {}): Promise<{
 
 /** Lightweight listing options for the new-lead form (owner/admin via RLS). */
 export async function getListingOptions(): Promise<{ id: string; title: string }[]> {
+  if (LOCAL_DEMO)
+    return demoListings
+      .filter((l) => !l.deleted_at)
+      .map((l) => ({ id: l.id, title: l.title }));
   const supabase = await createClient();
   const { data } = await supabase
     .from("listings")

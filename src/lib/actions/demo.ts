@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
 import { DEMO_MODE, DEMO_RESET_PHRASE } from "@/lib/demo";
+import { LOCAL_DEMO } from "@/lib/demo-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type DemoActionResult = { ok: true; message: string } | { ok: false; error: string };
@@ -33,6 +34,14 @@ export async function clearDemoData(confirm: string): Promise<DemoActionResult> 
   }
   if (confirm.trim() !== DEMO_RESET_PHRASE) {
     return { ok: false, error: `Sila taip "${DEMO_RESET_PHRASE}" untuk sahkan.` };
+  }
+
+  if (LOCAL_DEMO) {
+    return {
+      ok: true,
+      message:
+        "Demo tempatan menggunakan data dalam-memori — mulakan semula pelayan (restart) untuk reset penuh.",
+    };
   }
 
   let admin;

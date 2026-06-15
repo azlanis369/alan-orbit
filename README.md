@@ -23,7 +23,30 @@ Built with Next.js 15 (App Router) · TypeScript · Tailwind CSS · shadcn-style
 
 ---
 
-## Setup
+## 🚀 Cara terpantas — Demo tanpa setup (zero-config)
+
+Mahu lihat keseluruhan aplikasi serta-merta tanpa Supabase? Cukup:
+
+```bash
+npm install
+npm run dev
+```
+
+Buka http://localhost:3000 → pilih persona (Admin / Super Admin / Agent) di skrin
+log masuk. Bila **tiada** Supabase dikonfigurasi, aplikasi automatik berjalan
+dalam **Local Demo Mode**: dataset penuh dalam-memori (8 agent, 45 listing,
+130+ leads, 30+ deals, share, SWOT) — tiada pangkalan data, tiada auth backend
+diperlukan. Dashboard, katalog awam, profil agent, analytics & SWOT semua hidup
+dengan data contoh berlabel "DEMO".
+
+> Local Demo menyimpan perubahan (cth. Add Listing) dalam memori untuk sesi
+> pelayan semasa sahaja — restart untuk reset. Muat naik media dimatikan
+> (tiada storage). Untuk produk penuh dengan data berkekalan, sediakan Supabase
+> di bawah.
+
+---
+
+## Setup penuh (dengan Supabase)
 
 ### 1. Prasyarat
 
