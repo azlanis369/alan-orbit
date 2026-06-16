@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils";
 import { SIDEBAR_NAV, visibleNav } from "./nav-config";
 import type { Role } from "@/lib/constants";
 import { Logo } from "@/components/brand";
+import { useLanguage } from "@/contexts/language-context";
 
 export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const items = visibleNav(SIDEBAR_NAV, role);
 
   return (
@@ -34,7 +36,7 @@ export function Sidebar({ role }: { role: Role }) {
               )}
             >
               <Icon className="h-[18px] w-[18px]" />
-              {item.label}
+              {t.nav[item.labelKey]}
             </Link>
           );
         })}

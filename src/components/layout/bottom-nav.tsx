@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV } from "./nav-config";
+import { useLanguage } from "@/contexts/language-context";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden pb-safe">
@@ -35,7 +37,7 @@ export function BottomNav() {
               ) : (
                 <Icon className="h-5 w-5" />
               )}
-              {item.label}
+              {t.nav[item.labelKey]}
             </Link>
           );
         })}

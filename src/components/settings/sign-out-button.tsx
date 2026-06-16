@@ -7,10 +7,12 @@ import { createClient } from "@/lib/supabase/client";
 import { LOCAL_DEMO } from "@/lib/demo-mode";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { useLanguage } from "@/contexts/language-context";
 
 export function SignOutButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   async function onSignOut() {
     setLoading(true);
@@ -25,7 +27,7 @@ export function SignOutButton() {
   return (
     <Button variant="outline" onClick={onSignOut} disabled={loading}>
       {loading ? <Spinner /> : <LogOut className="h-4 w-4" />}
-      Log keluar
+      {t.settings.signOut}
     </Button>
   );
 }
