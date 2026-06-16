@@ -11,9 +11,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ROLES, type Role } from "@/lib/constants";
+import type { NavKey } from "@/lib/i18n/translations";
 
 export type NavItem = {
-  label: string;
+  labelKey: NavKey;
   href: string;
   icon: LucideIcon;
   roles?: Role[]; // omitted = all roles
@@ -22,28 +23,28 @@ export type NavItem = {
 const ALL: Role[] = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.AGENT];
 
 export const SIDEBAR_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ALL },
-  { label: "Listings", href: "/listings", icon: Building2, roles: ALL },
-  { label: "Add Listing", href: "/listings/new", icon: PlusCircle, roles: ALL },
-  { label: "Deals", href: "/deals", icon: Handshake, roles: ALL },
-  { label: "Leads", href: "/leads", icon: Users, roles: ALL },
-  { label: "My Profile", href: "/profile", icon: UserRound, roles: ALL },
-  { label: "Analytics", href: "/analytics", icon: BarChart3, roles: ALL },
+  { labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ALL },
+  { labelKey: "listings", href: "/listings", icon: Building2, roles: ALL },
+  { labelKey: "addListing", href: "/listings/new", icon: PlusCircle, roles: ALL },
+  { labelKey: "deals", href: "/deals", icon: Handshake, roles: ALL },
+  { labelKey: "leads", href: "/leads", icon: Users, roles: ALL },
+  { labelKey: "myProfile", href: "/profile", icon: UserRound, roles: ALL },
+  { labelKey: "analytics", href: "/analytics", icon: BarChart3, roles: ALL },
   {
-    label: "Admin Panel",
+    labelKey: "adminPanel",
     href: "/admin",
     icon: ShieldCheck,
     roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
   },
-  { label: "Settings", href: "/settings", icon: Settings, roles: ALL },
+  { labelKey: "settings", href: "/settings", icon: Settings, roles: ALL },
 ];
 
 export const BOTTOM_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Listings", href: "/listings", icon: Building2 },
-  { label: "Add", href: "/listings/new", icon: PlusCircle },
-  { label: "Deals", href: "/deals", icon: Handshake },
-  { label: "Profile", href: "/profile", icon: UserRound },
+  { labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "listings", href: "/listings", icon: Building2 },
+  { labelKey: "addListing", href: "/listings/new", icon: PlusCircle },
+  { labelKey: "deals", href: "/deals", icon: Handshake },
+  { labelKey: "myProfile", href: "/profile", icon: UserRound },
 ];
 
 export function visibleNav(items: NavItem[], role: Role): NavItem[] {
